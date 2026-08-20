@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Authenticated Area</title>
+    <style>
+        :root {
+            --color-primary: #8b0000;
+            --color-primary-dark: #6b0000;
+            --color-success: #27ae60;
+            --color-error: #e74c3c;
+            --color-bg-dark: #0f1419;
+            --color-bg-card: #1a1f28;
+            --color-text-primary: #e0e0e0;
+            --color-text-secondary: #a0a0a0;
+            --color-border: #2a3038;
+            
+            --font-family-primary: 'Fraunces', serif;
+            --font-family-secondary: 'Manrope', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family-secondary);
+            background: linear-gradient(135deg, var(--color-bg-dark) 0%, #1a1414 100%);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .header h1 {
+            font-family: var(--font-family-primary);
+            font-size: 32px;
+            color: var(--color-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            background: var(--color-primary);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 300ms ease;
+        }
+
+        .btn:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 1px solid var(--color-primary);
+            color: var(--color-primary);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(139, 0, 0, 0.1);
+        }
+
+        .card {
+            background: var(--color-bg-card);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: var(--color-primary);
+        }
+
+        .user-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+
+        .info-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            color: var(--color-text-primary);
+            word-break: break-all;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-error {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--color-error);
+            border-left: 4px solid var(--color-error);
+        }
+
+        .alert-success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--color-success);
+            border-left: 4px solid var(--color-success);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(139, 0, 0, 0.3);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        @media (max-width: 640px) {
+            .header {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔐 Dashboard</h1>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="refreshBtn" title="Refresh user data">
+                    Refresh Data
+                </button>
+                <button class="btn" id="logoutBtn">
+                    Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Alerts -->
+        <div id="alertContainer"></div>
+
+        <!-- Profile Card -->
+        <div class="card">
+            <h2>👤 User Profile</h2>
+            <div id="profileContent" class="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 12px;">Loading profile...</p>
+            </div>
+        </div>
+
+        <!-- Token Info Card -->
+        <div class="card">
+            <h2>🔑 Authentication Tokens</h2>
+            <div class="user-info">
+                <div class="info-item">
+                    <div class="info-label">Token Status</div>
+                    <div class="info-value" id="tokenStatus">Active</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Access Token Expires In</div>
+                    <div class="info-value" id="tokenExpires">~60 minutes</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Refresh Token Valid</div>
+                    <div class="info-value" id="refreshTokenValid">Yes (7 days)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Test Card -->
+        <div class="card">
+            <h2>🧪 API Testing</h2>
+            <p style="margin-bottom: 16px; color: var(--color-text-secondary); font-size: 13px;">
+                Test authenticated API endpoints to verify your session.
+            </p>
+            <div class="user-info">
+                <button class="btn" id="testApiBtn" style="width: 100%;">
+                    Test API Access
+                </button>
+            </div>
+            <div id="apiTestResult" style="margin-top: 16px;"></div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Dashboard - Authenticated User Area
+         * Demonstrates protected endpoint access with JWT tokens
+         */
+
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // ============ State ============
+        const state = {
+            user: null,
+            tokens: {
+                accessToken: localStorage.getItem('accessToken'),
+                refreshToken: localStorage.getItem('refreshToken')
+            }
+        };
+
+        // ============ Initialization ============
+        window.addEventListener('load', () => {
+            // Check if user is authenticated
+            if (!state.tokens.accessToken) {
+                showAlert('You must be logged in to access this page', 'error');
+                setTimeout(() => {
+                    window.location.href = '/index.html';
+                }, 2000);
+                return;
+            }
+
+            // Load user profile
+            loadProfile();
+        });
+
+        // ============ Event Listeners ============
+        document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+        document.getElementById('refreshBtn').addEventListener('click', loadProfile);
+        document.getElementById('testApiBtn').addEventListener('click', testAPI);
+
+        // ============ Functions ============
+
+        /**
+         * Load user profile from protected endpoint
+         */
+        async function loadProfile() {
+            const profileContent = document.getElementById('profileContent');
+            profileContent.innerHTML = '<div class="spinner"></div><p style="margin-top: 12px;">Loading profile...</p>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.tokens.accessToken}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    // Token expired, try refresh
+                    await refreshAccessToken();
+                    return loadProfile(); // Retry
+                }
+
+                const data = await response.json();
+
+                if (response.ok && data.user) {
+                    state.user = data.user;
+                    displayProfile(data.user);
+                    showAlert('Profile loaded successfully', 'success');
+                } else {
+                    showAlert(data.error || 'Failed to load profile', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('Network error while loading profile', 'error');
+            }
+        }
+
+        /**
+         * Display user profile
+         */
+        function displayProfile(user) {
+            const profileContent = document.getElementById('profileContent');
+            
+            const html = `
+                <div class="user-info">
+                    <div class="info-item">
+                        <div class="info-label">User ID</div>
+                        <div class="info-value">${user.id}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Email</div>
+                        <div class="info-value">${user.email}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Username</div>
+                        <div class="info-value">${user.username}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Account Created</div>
+                        <div class="info-value">${new Date(user.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Last Login</div>
+                        <div class="info-value">
+                            ${user.last_login ? new Date(user.last_login).toLocaleString() : 'First login'}
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Status</div>
+                        <div class="info-value" style="color: var(--color-success);">
+                            ${user.is_active ? '✓ Active' : '✗ Inactive'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            profileContent.innerHTML = html;
+        }
+
+        /**
+         * Handle logout
+         */
+        async function handleLogout() {
+            try {
+                // Call logout endpoint
+                await fetch(`${API_BASE_URL}/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.tokens.accessToken}`
+                    }
+                });
+            } catch (error) {
+                console.error('Logout error:', error);
+            }
+
+            // Clear local storage
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('user');
+
+            showAlert('Logged out successfully', 'success');
+            setTimeout(() => {
+                window.location.href = '/index.html';
+            }, 1000);
+        }
+
+        /**
+         * Refresh access token
+         */
+        async function refreshAccessToken() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/refresh-token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        refresh_token: state.tokens.refreshToken
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.tokens) {
+                    // Update tokens
+                    state.tokens.accessToken = data.tokens.access_token;
+                    state.tokens.refreshToken = data.tokens.refresh_token;
+
+                    localStorage.setItem('accessToken', data.tokens.access_token);
+                    localStorage.setItem('refreshToken', data.tokens.refresh_token);
+
+                    showAlert('Token refreshed successfully', 'success');
+                    return true;
+                } else {
+                    // Refresh failed, redirect to login
+                    showAlert('Session expired. Please login again.', 'error');
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 2000);
+                    return false;
+                }
+            } catch (error) {
+                console.error('Refresh token error:', error);
+                showAlert('Failed to refresh token', 'error');
+                return false;
+            }
+        }
+
+        /**
+         * Test API access with current token
+         */
+        async function testAPI() {
+            const resultDiv = document.getElementById('apiTestResult');
+            resultDiv.innerHTML = '<div class="spinner" style="display: inline-block;"></div> Testing API...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${state.tokens.accessToken}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success show" style="margin: 0;">
+                            ✓ API Access Successful
+                            <br><small>Your JWT token is valid and working correctly.</small>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-error show" style="margin: 0;">
+                            ✗ API Access Failed
+                            <br><small>${data.error || 'Unknown error'}</small>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="alert alert-error show" style="margin: 0;">
+                        ✗ Network Error
+                        <br><small>${error.message}</small>
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * Show alert
+         */
+        function showAlert(message, type = 'error') {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+
+            container.innerHTML = '';
+            container.appendChild(alert);
+
+            if (type === 'success') {
+                setTimeout(() => alert.remove(), 4000);
+            }
+        }
+    </script>
+</body>
+</html>
